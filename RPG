@@ -1,0 +1,348 @@
+import random
+
+# Character class
+class Character:
+    def __init__(self, name, char_class, health, attack_power):
+        self.name = name
+        self.char_class = char_class
+        self.health = health
+        self.attack_power = attack_power
+        self.level = 1
+        self.experience = 0
+        self.inventory = []
+    
+    def attack(self, enemy):
+        damage = random.randint(self.attack_power - 2, self.attack_power + 2)
+        enemy.health -= damage
+        print(f"{self.name} attacks {enemy.name} for {damage} damage!")
+        if enemy.health <= 0:
+            print(f"{enemy.name} is defeated!")
+    
+    def defend(self):
+        print(f"{self.name} is defending!")
+        return random.randint(1, 4)  # Reduced damage
+
+    def use_item(self, item):
+        if item in self.inventory:
+            print(f"{self.name} uses {item}!")
+            # Apply item effects (healing, buffing, etc.)
+        else:
+            print("Item not found!")
+
+    def level_up(self):
+        self.level += 1
+        self.attack_power += 2
+        self.health += 10
+        print(f"{self.name} leveled up to {self.level}!")
+
+# Enemy class
+class Enemy:
+    def __init__(self, name, health, attack_power):
+        self.name = name
+        self.health = health
+        self.attack_power = attack_power
+    
+    def attack(self, player):
+        damage = random.randint(self.attack_power - 1, self.attack_power + 1)
+        player.health -= damage
+        print(f"{self.name} attacks {player.name} for {damage} damage!")
+
+# Battle System
+def battle(player, enemy):
+    print(f"A wild {enemy.name} appears!")
+    while player.health > 0 and enemy.health > 0:
+        print(f"{player.name} - Health: {player.health}")
+        print(f"{enemy.name} - Health: {enemy.health}")
+        action = input("Choose action: (1) Attack, (2) Defend, (3) Use Item\n")
+        
+        if action == '1':
+            player.attack(enemy)
+        elif action == '2':
+            defense = player.defend()
+            damage = max(0, enemy.attack_power - defense)
+            print(f"{enemy.name} attacks but {player.name} reduces damage by {defense}!")
+        elif action == '3':
+            player.use_item("Healing Potion")  # Example item
+        
+        if enemy.health > 0:
+            enemy.attack(player)
+    
+    if player.health <= 0:
+        print(f"{player.name} was defeated!")
+    else:
+        print(f"{player.name} won the battle!")
+
+# Example Usage
+player = Character("Hero", "Warrior", 100, 10)
+enemy = Enemy("Goblin", 30, 5)
+
+battle(player, enemy)
+
+import random
+
+# Define map dimensions (5x5 grid)
+map_grid = [
+    ["Town", "Forest", "River", "Cave", "Mountain"],
+    ["Plains", "Forest", "Lake", "Ruins", "Desert"],
+    ["Village", "Forest", "Road", "Swamp", "Desert"],
+    ["Road", "Hill", "Fortress", "Marsh", "Canyon"],
+    ["Beach", "Coast", "Cliff", "Ocean", "Island"]
+]
+
+# Player's position
+player_position = [0, 0]
+
+# Define movement directions
+directions = {
+    'north': [-1, 0],
+    'south': [1, 0],
+    'west': [0, -1],
+    'east': [0, 1]
+}
+
+# Function to display the map
+def display_map(position):
+    print(f"You are in {map_grid[position[0]][position[1]]}")
+
+# Function to move player
+def move_player(direction):
+    new_position = [
+        player_position[0] + directions[direction][0],
+        player_position[1] + directions[direction][1]
+    ]
+    
+    # Check if the move is within map boundaries
+    if 0 <= new_position[0] < len(map_grid) and 0 <= new_position[1] < len(map_grid[0]):
+        player_position[0], player_position[1] = new_position
+        display_map(player_position)
+        
+        # Random chance for battle (30%)
+        if random.random() < 0.3:
+            enemy = Enemy("Orc", 40, 7)  # Example enemy
+            battle(player, enemy)
+    else:
+        print("You can't move in that direction!")
+
+# Main exploration loop
+def explore():
+    display_map(player_position)
+    while True:
+        command = input("Move (north, south, east, west) or 'q' to quit: ").lower()
+        if command == 'q':
+            print("Exiting exploration.")
+            break
+        elif command in directions:
+            move_player(command)
+        else:
+            print("Invalid command!")
+
+# Example Usage
+player = Character("Hero", "Warrior", 100, 10)
+explore()
+
+def test_battle_system():
+    # Create player and enemy for testing
+    test_player = Character("TestHero", "Mage", 100, 12)
+    test_enemy = Enemy("TestGoblin", 50, 8)
+    
+    # Test player attack
+    initial_enemy_health = test_enemy.health
+    test_player.attack(test_enemy)
+    assert test_enemy.health < initial_enemy_health, "Player attack did not reduce enemy health!"
+    
+    # Test enemy attack
+    initial_player_health = test_player.health
+    test_enemy.attack(test_player)
+    assert test_player.health < initial_player_health, "Enemy attack did not reduce player health!"
+    
+    # Test battle win condition
+    test_enemy.health = 1  # Set low health for easy defeat
+    test_player.attack(test_enemy)
+    assert test_enemy.health <= 0, "Enemy should have been defeated!"
+    
+    print("All battle system tests passed!")
+
+# Run tests
+test_battle_system()
+
+import zipfile
+import os
+
+# Prepare directory structure for the RPG project
+project_dir = '/mnt/data/rpg_game/'
+os.makedirs(project_dir, exist_ok=True)
+
+# Write main.py (Main game loop)
+main_py = '''from character import Character
+from explore import explore
+
+# Main entry point for the RPG
+def main():
+    print("Welcome to the RPG!")
+    player = Character("Hero", "Warrior", 100, 10)
+    explore(player)
+
+if __name__ == "__main__":
+    main()
+'''
+
+with open(f'{project_dir}main.py', 'w') as file:
+    file.write(main_py)
+
+# Write character.py (Character and Enemy classes)
+character_py = '''import random
+
+# Character class
+class Character:
+    def __init__(self, name, char_class, health, attack_power):
+        self.name = name
+        self.char_class = char_class
+        self.health = health
+        self.attack_power = attack_power
+        self.level = 1
+        self.experience = 0
+        self.inventory = []
+    
+    def attack(self, enemy):
+        damage = random.randint(self.attack_power - 2, self.attack_power + 2)
+        enemy.health -= damage
+        print(f"{self.name} attacks {enemy.name} for {damage} damage!")
+        if enemy.health <= 0:
+            print(f"{enemy.name} is defeated!")
+    
+    def defend(self):
+        print(f"{self.name} is defending!")
+        return random.randint(1, 4)
+
+    def use_item(self, item):
+        if item in self.inventory:
+            print(f"{self.name} uses {item}!")
+        else:
+            print("Item not found!")
+
+    def level_up(self):
+        self.level += 1
+        self.attack_power += 2
+        self.health += 10
+        print(f"{self.name} leveled up to {self.level}!")
+
+# Enemy class
+class Enemy:
+    def __init__(self, name, health, attack_power):
+        self.name = name
+        self.health = health
+        self.attack_power = attack_power
+    
+    def attack(self, player):
+        damage = random.randint(self.attack_power - 1, self.attack_power + 1)
+        player.health -= damage
+        print(f"{self.name} attacks {player.name} for {damage} damage!")
+'''
+
+with open(f'{project_dir}character.py', 'w') as file:
+    file.write(character_py)
+
+# Write battle.py (Battle system logic)
+battle_py = '''from character import Character, Enemy
+import random
+
+def battle(player, enemy):
+    print(f"A wild {enemy.name} appears!")
+    while player.health > 0 and enemy.health > 0:
+        print(f"{player.name} - Health: {player.health}")
+        print(f"{enemy.name} - Health: {enemy.health}")
+        action = input("Choose action: (1) Attack, (2) Defend, (3) Use Item\\n")
+        
+        if action == '1':
+            player.attack(enemy)
+        elif action == '2':
+            defense = player.defend()
+            damage = max(0, enemy.attack_power - defense)
+            print(f"{enemy.name} attacks but {player.name} reduces damage by {defense}!")
+        elif action == '3':
+            player.use_item("Healing Potion")
+        
+        if enemy.health > 0:
+            enemy.attack(player)
+    
+    if player.health <= 0:
+        print(f"{player.name} was defeated!")
+    else:
+        print(f"{player.name} won the battle!")
+'''
+
+with open(f'{project_dir}battle.py', 'w') as file:
+    file.write(battle_py)
+
+# Write explore.py (Map exploration logic)
+explore_py = '''import random
+from character import Enemy
+from battle import battle
+
+# Define map dimensions (5x5 grid)
+map_grid = [
+    ["Town", "Forest", "River", "Cave", "Mountain"],
+    ["Plains", "Forest", "Lake", "Ruins", "Desert"],
+    ["Village", "Forest", "Road", "Swamp", "Desert"],
+    ["Road", "Hill", "Fortress", "Marsh", "Canyon"],
+    ["Beach", "Coast", "Cliff", "Ocean", "Island"]
+]
+
+# Player's position
+player_position = [0, 0]
+
+# Define movement directions
+directions = {
+    'north': [-1, 0],
+    'south': [1, 0],
+    'west': [0, -1],
+    'east': [0, 1]
+}
+
+# Function to display the map
+def display_map(position):
+    print(f"You are in {map_grid[position[0]][position[1]]}")
+
+# Function to move player
+def move_player(direction, player):
+    new_position = [
+        player_position[0] + directions[direction][0],
+        player_position[1] + directions[direction][1]
+    ]
+    
+    if 0 <= new_position[0] < len(map_grid) and 0 <= new_position[1] < len(map_grid[0]):
+        player_position[0], player_position[1] = new_position
+        display_map(player_position)
+        
+        if random.random() < 0.3:
+            enemy = Enemy("Orc", 40, 7)
+            battle(player, enemy)
+    else:
+        print("You can't move in that direction!")
+
+# Main exploration loop
+def explore(player):
+    display_map(player_position)
+    while True:
+        command = input("Move (north, south, east, west) or 'q' to quit: ").lower()
+        if command == 'q':
+            print("Exiting exploration.")
+            break
+        elif command in directions:
+            move_player(command, player)
+        else:
+            print("Invalid command!")
+'''
+
+with open(f'{project_dir}explore.py', 'w') as file:
+    file.write(explore_py)
+
+# Zip the entire project folder
+zip_path = '/mnt/data/rpg_game.zip'
+with zipfile.ZipFile(zip_path, 'w') as zipf:
+    for root, dirs, files in os.walk(project_dir):
+        for file in files:
+            zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), project_dir))
+
+zip_path  # Returning the path to the zipped file for download
+
