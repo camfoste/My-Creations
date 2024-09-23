@@ -165,184 +165,99 @@ def test_battle_system():
 # Run tests
 test_battle_system()
 
-import zipfile
-import os
-
-# Prepare directory structure for the RPG project
-project_dir = '/mnt/data/rpg_game/'
-os.makedirs(project_dir, exist_ok=True)
-
-# Write main.py (Main game loop)
-main_py = '''from character import Character
-from explore import explore
-
-# Main entry point for the RPG
-def main():
-    print("Welcome to the RPG!")
-    player = Character("Hero", "Warrior", 100, 10)
-    explore(player)
-
-if __name__ == "__main__":
-    main()
-'''
-
-with open(f'{project_dir}main.py', 'w') as file:
-    file.write(main_py)
-
-# Write character.py (Character and Enemy classes)
-character_py = '''import random
-
-# Character class
-class Character:
-    def __init__(self, name, char_class, health, attack_power):
-        self.name = name
-        self.char_class = char_class
-        self.health = health
-        self.attack_power = attack_power
-        self.level = 1
-        self.experience = 0
-        self.inventory = []
+class Quest:
+    def __init__(self, quest_name, description, reward, objective):
+        self.quest_name = quest_name
+        self.description = description
+        self.reward = reward
+        self.objective = objective
+        self.completed = False
     
-    def attack(self, enemy):
-        damage = random.randint(self.attack_power - 2, self.attack_power + 2)
-        enemy.health -= damage
-        print(f"{self.name} attacks {enemy.name} for {damage} damage!")
-        if enemy.health <= 0:
-            print(f"{enemy.name} is defeated!")
-    
-    def defend(self):
-        print(f"{self.name} is defending!")
-        return random.randint(1, 4)
-
-    def use_item(self, item):
-        if item in self.inventory:
-            print(f"{self.name} uses {item}!")
+    def check_completion(self, player):
+        if self.objective(player):
+            print(f"Quest '{self.quest_name}' completed!")
+            player.experience += self.reward['experience']
+            player.inventory.append(self.reward['item'])
+            self.completed = True
         else:
-            print("Item not found!")
+            print(f"Quest '{self.quest_name}' is still incomplete.")
 
-    def level_up(self):
-        self.level += 1
-        self.attack_power += 2
-        self.health += 10
-        print(f"{self.name} leveled up to {self.level}!")
-
-# Enemy class
-class Enemy:
-    def __init__(self, name, health, attack_power):
+class NPC:
+    def __init__(self, name):
         self.name = name
-        self.health = health
-        self.attack_power = attack_power
-    
-    def attack(self, player):
-        damage = random.randint(self.attack_power - 1, self.attack_power + 1)
-        player.health -= damage
-        print(f"{self.name} attacks {player.name} for {damage} damage!")
-'''
+        self.quests = []
 
-with open(f'{project_dir}character.py', 'w') as file:
-    file.write(character_py)
+    def give_quest(self, quest):
+        self.quests.append(quest)
+        print(f"{self.name} gave you the quest: {quest.quest_name}")
 
-# Write battle.py (Battle system logic)
-battle_py = '''from character import Character, Enemy
-import random
+    def interact(self, player):
+        for quest in self.quests:
+            if not quest.completed:
+                print(f"{self.name}: {quest.description}")
+                quest.check_completion(player)
 
-def battle(player, enemy):
-    print(f"A wild {enemy.name} appears!")
-    while player.health > 0 and enemy.health > 0:
-        print(f"{player.name} - Health: {player.health}")
-        print(f"{enemy.name} - Health: {enemy.health}")
-        action = input("Choose action: (1) Attack, (2) Defend, (3) Use Item\\n")
-        
-        if action == '1':
-            player.attack(enemy)
-        elif action == '2':
-            defense = player.defend()
-            damage = max(0, enemy.attack_power - defense)
-            print(f"{enemy.name} attacks but {player.name} reduces damage by {defense}!")
-        elif action == '3':
-            player.use_item("Healing Potion")
-        
-        if enemy.health > 0:
-            enemy.attack(player)
-    
-    if player.health <= 0:
-        print(f"{player.name} was defeated!")
-    else:
-        print(f"{player.name} won the battle!")
-'''
+# Example Quest and NPC
+def example_quest_objective(player):
+    return player.level >= 2  # Player must reach level 2 to complete the quest
 
-with open(f'{project_dir}battle.py', 'w') as file:
-    file.write(battle_py)
+npc = NPC("Old Wizard")
+quest = Quest("Hero's Trial", "Prove yourself by reaching level 2.", {"experience": 50, "item": "Magic Scroll"}, example_quest_objective)
 
-# Write explore.py (Map exploration logic)
-explore_py = '''import random
-from character import Enemy
-from battle import battle
+npc.give_quest(quest)
+npc.interact(player)  # Interacting with NPC to check quest status
 
-# Define map dimensions (5x5 grid)
-map_grid = [
-    ["Town", "Forest", "River", "Cave", "Mountain"],
-    ["Plains", "Forest", "Lake", "Ruins", "Desert"],
-    ["Village", "Forest", "Road", "Swamp", "Desert"],
-    ["Road", "Hill", "Fortress", "Marsh", "Canyon"],
-    ["Beach", "Coast", "Cliff", "Ocean", "Island"]
-]
+class Skill:
+    def __init__(self, name, damage, mana_cost):
+        self.name = name
+        self.damage = damage
+        self.mana_cost = mana_cost
 
-# Player's position
-player_position = [0, 0]
+class CharacterWithMagic(Character):
+    def __init__(self, name, char_class, health, attack_power, mana):
+        super().__init__(name, char_class, health, attack_power)
+        self.mana = mana
+        self.skills = []
 
-# Define movement directions
-directions = {
-    'north': [-1, 0],
-    'south': [1, 0],
-    'west': [0, -1],
-    'east': [0, 1]
-}
+    def learn_skill(self, skill):
+        self.skills.append(skill)
+        print(f"{self.name} learned the skill {skill.name}!")
 
-# Function to display the map
-def display_map(position):
-    print(f"You are in {map_grid[position[0]][position[1]]}")
-
-# Function to move player
-def move_player(direction, player):
-    new_position = [
-        player_position[0] + directions[direction][0],
-        player_position[1] + directions[direction][1]
-    ]
-    
-    if 0 <= new_position[0] < len(map_grid) and 0 <= new_position[1] < len(map_grid[0]):
-        player_position[0], player_position[1] = new_position
-        display_map(player_position)
-        
-        if random.random() < 0.3:
-            enemy = Enemy("Orc", 40, 7)
-            battle(player, enemy)
-    else:
-        print("You can't move in that direction!")
-
-# Main exploration loop
-def explore(player):
-    display_map(player_position)
-    while True:
-        command = input("Move (north, south, east, west) or 'q' to quit: ").lower()
-        if command == 'q':
-            print("Exiting exploration.")
-            break
-        elif command in directions:
-            move_player(command, player)
+    def cast_spell(self, skill, enemy):
+        if self.mana >= skill.mana_cost:
+            self.mana -= skill.mana_cost
+            enemy.health -= skill.damage
+            print(f"{self.name} casts {skill.name} on {enemy.name} for {skill.damage} damage!")
         else:
-            print("Invalid command!")
-'''
+            print("Not enough mana to cast the spell!")
 
-with open(f'{project_dir}explore.py', 'w') as file:
-    file.write(explore_py)
+# Example Skill
+fireball = Skill("Fireball", 20, 5)
 
-# Zip the entire project folder
-zip_path = '/mnt/data/rpg_game.zip'
-with zipfile.ZipFile(zip_path, 'w') as zipf:
-    for root, dirs, files in os.walk(project_dir):
-        for file in files:
-            zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), project_dir))
+# Create a Mage with magic skills
+player_mage = CharacterWithMagic("Mage", "Mage", 80, 8, 20)
+player_mage.learn_skill(fireball)
+player_mage.cast_spell(fireball, enemy)
 
-zip_path  # Returning the path to the zipped file for download
+class StatusEffect:
+    def __init__(self, name, effect_type, duration, effect_strength):
+        self.name = name
+        self.effect_type = effect_type
+        self.duration = duration
+        self.effect_strength = effect_strength
+
+    def apply_effect(self, target):
+        if self.effect_type == "poison":
+            target.health -= self.effect_strength
+            print(f"{target.name} is poisoned for {self.effect_strength} damage!")
+        elif self.effect_type == "buff":
+            target.attack_power += self.effect_strength
+            print(f"{target.name}'s attack power increased by {self.effect_strength}!")
+        self.duration -= 1
+
+# Example of Poison Effect
+poison = StatusEffect("Poison", "poison", 3, 5)
+
+# Applying the effect during battle
+poison.apply_effect(enemy)
 
